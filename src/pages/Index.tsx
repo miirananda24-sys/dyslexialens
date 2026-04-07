@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { createWorker } from "tesseract.js";
-import { Eye } from "lucide-react";
+import { Eye, Sparkles } from "lucide-react";
 import CameraView from "@/components/CameraView";
 import TextResultPanel from "@/components/TextResultPanel";
 import { toast } from "sonner";
@@ -16,14 +16,13 @@ const Index = () => {
       const worker = await createWorker("eng+ind", 1, {
         logger: (m) => {
           if (m.status === "recognizing text") {
-            // Could show progress here
+            // progress
           }
         },
       });
 
-      // Set high-accuracy parameters
       await worker.setParameters({
-        tessedit_pageseg_mode: "6" as any, // Assume uniform block of text
+        tessedit_pageseg_mode: "6" as any,
         preserve_interword_spaces: "1" as any,
       });
 
@@ -53,47 +52,55 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-            <Eye className="w-5 h-5 text-primary-foreground" />
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50">
+        <div className="max-w-lg mx-auto px-5 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-card">
+              <Eye className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="font-dyslexic text-base font-bold text-foreground leading-tight tracking-tight">
+                Dyslexia Lens
+              </h1>
+              <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                Baca teks lebih mudah
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-dyslexic text-lg font-bold text-foreground leading-tight">
-              Dyslexia Lens
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Scan teks • Font ramah disleksia • TTS
-            </p>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/60 border border-border/50">
+            <Sparkles className="w-3 h-3 text-primary" />
+            <span className="text-[10px] font-medium text-accent-foreground">OCR Ready</span>
           </div>
         </div>
       </header>
 
       {/* Main content */}
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
+      <main className="flex-1 max-w-lg mx-auto w-full px-5 py-5">
         {mode === "camera" ? (
-          <>
-            <div className="text-center space-y-2">
-              <p className="font-dyslexic text-muted-foreground text-sm">
-                Arahkan kamera ke teks yang ingin dibaca
-              </p>
-              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse" />
-                Zoom untuk fokus lebih jelas
+          <div className="space-y-5">
+            {/* Instruction pill */}
+            <div className="flex justify-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/50 border border-border/50">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                <span className="text-xs text-muted-foreground font-dyslexic">
+                  Arahkan kamera ke teks, zoom untuk fokus
+                </span>
               </div>
             </div>
             <CameraView onCapture={handleCapture} isProcessing={isProcessing} />
-          </>
+          </div>
         ) : (
           <TextResultPanel detectedText={detectedText} onReset={handleReset} />
         )}
       </main>
 
       {/* Footer */}
-      <footer className="text-center py-4 text-xs text-muted-foreground">
-        <p className="font-dyslexic">Dibuat untuk membantu pembaca disleksia 💙</p>
+      <footer className="py-3 text-center border-t border-border/30">
+        <p className="text-[10px] text-muted-foreground/60 font-dyslexic">
+          Dibuat untuk membantu pembaca disleksia 💙
+        </p>
       </footer>
     </div>
   );
