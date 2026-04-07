@@ -1,33 +1,36 @@
 import { useRef, useState, useCallback, useEffect } from "react";
-import { Camera, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { RotateCcw, ZoomIn, ZoomOut, Upload, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface CameraViewProps {
   onCapture: (imageData: string) => void;
   isProcessing: boolean;
+  autoScanInterval?: number;
 }
 
-const CameraView = ({ onCapture, isProcessing }: CameraViewProps) => {
+const CameraView = ({ onCapture, isProcessing, autoScanInterval = 3000 }: CameraViewProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [zoom, setZoom] = useState(1);
   const streamRef = useRef<MediaStream | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [scanCount, setScanCount] = useState(0);
 
   const startCamera = useCallback(async () => {
     try {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
-      const constraints: MediaStreamConstraints = {
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode,
           width: { ideal: 1920 },
           height: { ideal: 1080 },
         },
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -46,8 +49,25 @@ const CameraView = ({ onCapture, isProcessing }: CameraViewProps) => {
     };
   }, [startCamera]);
 
+  const processImage = useCallback((canvas: HTMLCanvasElement) => {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      const adjusted = Math.min(255, Math.max(0, (gray - 128) * 1.5 + 128));
+      const val = adjusted > 140 ? 255 : 0;
+      data[i] = val;
+      data[i + 1] = val;
+      data[i + 2] = val;
+    }
+    ctx.putImageData(imageData, 0, 0);
+    return canvas.toDataURL("image/png", 1.0);
+  }, []);
+
   const capture = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current || !canvasRef.current || isProcessing) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
@@ -61,25 +81,53 @@ const CameraView = ({ onCapture, isProcessing }: CameraViewProps) => {
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(video, sx, sy, cropW, cropH, 0, 0, cropW, cropH);
 
-    // Contrast boost + binarize for OCR
-    const imageData = ctx.getImageData(0, 0, cropW, cropH);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-      const adjusted = Math.min(255, Math.max(0, (gray - 128) * 1.5 + 128));
-      const val = adjusted > 140 ? 255 : 0;
-      data[i] = val;
-      data[i + 1] = val;
-      data[i + 2] = val;
+    const result = processImage(canvas);
+    if (result) {
+      setScanCount((c) => c + 1);
+      onCapture(result);
     }
-    ctx.putImageData(imageData, 0, 0);
+  }, [zoom, onCapture, isProcessing, processImage]);
 
-    onCapture(canvas.toDataURL("image/png", 1.0));
-  }, [zoom, onCapture]);
+  // Auto-scan interval
+  useEffect(() => {
+    if (isStreaming && !isProcessing) {
+      intervalRef.current = setInterval(() => {
+        capture();
+      }, autoScanInterval);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isStreaming, isProcessing, capture, autoScanInterval]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0);
+        const result = processImage(canvas);
+        if (result) {
+          setScanCount((c) => c + 1);
+          onCapture(result);
+        }
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
 
   const toggleCamera = () => {
     setFacingMode((prev) => (prev === "user" ? "environment" : "user"));
@@ -87,11 +135,10 @@ const CameraView = ({ onCapture, isProcessing }: CameraViewProps) => {
 
   return (
     <div className="relative w-full">
-      <div className="relative overflow-hidden rounded-3xl bg-foreground/5">
-        {/* Video - NO mirror (scaleX removed), no transform for zoom on display */}
+      <div className="relative overflow-hidden rounded-2xl bg-foreground/5 border border-border/50 shadow-card">
         <video
           ref={videoRef}
-          className="w-full aspect-[3/4] object-cover"
+          className="w-full aspect-[4/3] object-cover"
           playsInline
           muted
           style={{
@@ -100,90 +147,69 @@ const CameraView = ({ onCapture, isProcessing }: CameraViewProps) => {
           }}
         />
 
-        {/* Viewfinder overlay */}
-        {isStreaming && !isProcessing && (
+        {/* Scanning indicator */}
+        {isStreaming && (
           <div className="absolute inset-0 pointer-events-none">
-            {/* Subtle vignette */}
             <div className="absolute inset-0" style={{
-              background: "radial-gradient(ellipse at center, transparent 50%, hsl(210 30% 15% / 0.3) 100%)"
+              background: "radial-gradient(ellipse at center, transparent 60%, hsl(210 30% 15% / 0.25) 100%)"
             }} />
-            {/* Corner brackets */}
-            <svg className="absolute inset-4 w-[calc(100%-2rem)] h-[calc(100%-5rem)]" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M0 24 L0 8 Q0 0 8 0 L24 0" stroke="hsl(174 62% 40%)" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M100% 24 L100% 8 Q100% 0 calc(100%-8) 0 L calc(100%-24) 0" stroke="hsl(174 62% 40%)" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M0 calc(100%-24) L0 calc(100%-8) Q0 100% 8 100% L24 100%" stroke="hsl(174 62% 40%)" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M100% calc(100%-24) L100% calc(100%-8) Q100% 100% calc(100%-8) 100% L calc(100%-24) 100%" stroke="hsl(174 62% 40%)" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
-            {/* Center crosshair */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-2 bg-primary/40" />
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-px h-2 bg-primary/40" />
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-px bg-primary/40" />
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-px bg-primary/40" />
+            {/* Scan line animation */}
+            <div className="absolute left-4 right-4 h-0.5 bg-primary/60 animate-scan rounded-full" style={{ boxShadow: '0 0 12px 2px hsl(174 62% 40% / 0.4)' }} />
+            {/* Corner markers */}
+            <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-primary/70 rounded-tl-md" />
+            <div className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-primary/70 rounded-tr-md" />
+            <div className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-primary/70 rounded-bl-md" />
+            <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-primary/70 rounded-br-md" />
+            {/* Status pill */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-[10px] font-medium text-foreground">Scanning</span>
             </div>
           </div>
         )}
 
         {/* Processing overlay */}
         {isProcessing && (
-          <div className="absolute inset-0 bg-background/40 flex items-center justify-center backdrop-blur-md">
-            <div className="bg-card/95 px-8 py-5 rounded-2xl shadow-deep flex flex-col items-center gap-3">
-              <div className="w-10 h-10 border-3 border-primary/30 border-t-primary rounded-full animate-spin" style={{ borderWidth: '3px' }} />
-              <span className="font-dyslexic text-sm text-card-foreground font-medium">Mendeteksi teks...</span>
-              <span className="text-xs text-muted-foreground">Mohon tunggu sebentar</span>
+          <div className="absolute inset-0 bg-background/30 flex items-center justify-center backdrop-blur-sm">
+            <div className="bg-card/95 px-6 py-4 rounded-xl shadow-deep flex items-center gap-3">
+              <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              <span className="font-dyslexic text-sm text-card-foreground font-medium">Memproses...</span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Bottom controls - floating pill */}
-      <div className="mt-4 flex items-center justify-center gap-3">
-        {/* Zoom controls */}
-        <div className="flex items-center gap-1 bg-card rounded-full px-2 py-1.5 shadow-card border border-border">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-9 w-9 rounded-full text-foreground hover:text-primary hover:bg-accent"
-            onClick={() => setZoom((z) => Math.max(1, z - 0.5))}
-          >
-            <ZoomOut className="w-4 h-4" />
+      {/* Controls */}
+      <div className="mt-3 flex items-center justify-between">
+        {/* Zoom */}
+        <div className="flex items-center gap-1 bg-card rounded-full px-2 py-1.5 shadow-sm border border-border/50">
+          <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => setZoom((z) => Math.max(1, z - 0.5))}>
+            <ZoomOut className="w-3.5 h-3.5" />
           </Button>
-          <span className="text-xs font-dyslexic text-muted-foreground min-w-[3.5ch] text-center font-medium">
-            {zoom.toFixed(1)}x
-          </span>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-9 w-9 rounded-full text-foreground hover:text-primary hover:bg-accent"
-            onClick={() => setZoom((z) => Math.min(4, z + 0.5))}
-          >
-            <ZoomIn className="w-4 h-4" />
+          <span className="text-xs font-dyslexic text-muted-foreground min-w-[3ch] text-center">{zoom.toFixed(1)}x</span>
+          <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => setZoom((z) => Math.min(4, z + 0.5))}>
+            <ZoomIn className="w-3.5 h-3.5" />
           </Button>
         </div>
 
-        {/* Capture button */}
-        <button
-          className="relative h-[72px] w-[72px] rounded-full bg-gradient-primary flex items-center justify-center shadow-deep active:scale-95 transition-transform disabled:opacity-50"
-          onClick={capture}
-          disabled={!isStreaming || isProcessing}
-        >
-          <div className="absolute inset-1 rounded-full border-2 border-primary-foreground/30" />
-          <Camera className="w-7 h-7 text-primary-foreground" />
-        </button>
+        {/* Scan count */}
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/60 border border-border/50">
+          <ScanLine className="w-3.5 h-3.5 text-primary" />
+          <span className="text-xs font-medium text-accent-foreground">{scanCount} scan</span>
+        </div>
 
-        {/* Flip camera */}
-        <div className="bg-card rounded-full shadow-card border border-border">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-11 w-11 rounded-full text-foreground hover:text-primary hover:bg-accent"
-            onClick={toggleCamera}
-          >
-            <RotateCcw className="w-4 h-4" />
+        {/* Upload + Flip */}
+        <div className="flex items-center gap-1.5">
+          <Button size="icon" variant="outline" className="h-9 w-9 rounded-full" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="w-3.5 h-3.5" />
+          </Button>
+          <Button size="icon" variant="outline" className="h-9 w-9 rounded-full" onClick={toggleCamera}>
+            <RotateCcw className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
 
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
       <canvas ref={canvasRef} className="hidden" />
     </div>
   );
