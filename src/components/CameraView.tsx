@@ -20,14 +20,14 @@ const CameraView = ({ onCapture, isProcessing }: CameraViewProps) => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const constraints: MediaStreamConstraints = {
         video: {
           facingMode,
           width: { ideal: 1920 },
           height: { ideal: 1080 },
-          focusMode: "continuous" as any,
         },
-      });
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
