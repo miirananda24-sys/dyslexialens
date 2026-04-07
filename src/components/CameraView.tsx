@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
-import { Camera, RotateCcw, ZoomIn, ZoomOut, Focus } from "lucide-react";
+import { Camera, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface CameraViewProps {
@@ -51,7 +51,6 @@ const CameraView = ({ onCapture, isProcessing }: CameraViewProps) => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    // Apply zoom by cropping center
     const cropW = video.videoWidth / zoom;
     const cropH = video.videoHeight / zoom;
     const sx = (video.videoWidth - cropW) / 2;
@@ -63,20 +62,15 @@ const CameraView = ({ onCapture, isProcessing }: CameraViewProps) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Sharpen: draw at native resolution
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(video, sx, sy, cropW, cropH, 0, 0, cropW, cropH);
 
-    // Apply sharpening filter for better OCR
+    // Contrast boost + binarize for OCR
     const imageData = ctx.getImageData(0, 0, cropW, cropH);
     const data = imageData.data;
-
-    // Increase contrast for better text detection
     for (let i = 0; i < data.length; i += 4) {
       const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-      const factor = 1.5; // contrast boost
-      const adjusted = Math.min(255, Math.max(0, ((gray - 128) * factor + 128)));
-      // Binarize for cleaner OCR
+      const adjusted = Math.min(255, Math.max(0, (gray - 128) * 1.5 + 128));
       const val = adjusted > 140 ? 255 : 0;
       data[i] = val;
       data[i + 1] = val;
@@ -84,8 +78,7 @@ const CameraView = ({ onCapture, isProcessing }: CameraViewProps) => {
     }
     ctx.putImageData(imageData, 0, 0);
 
-    const dataUrl = canvas.toDataURL("image/png", 1.0);
-    onCapture(dataUrl);
+    onCapture(canvas.toDataURL("image/png", 1.0));
   }, [zoom, onCapture]);
 
   const toggleCamera = () => {
@@ -93,83 +86,101 @@ const CameraView = ({ onCapture, isProcessing }: CameraViewProps) => {
   };
 
   return (
-    <div className="relative w-full max-w-lg mx-auto">
-      <div className="relative overflow-hidden rounded-2xl shadow-deep border-2 border-primary/20">
+    <div className="relative w-full">
+      <div className="relative overflow-hidden rounded-3xl bg-foreground/5">
+        {/* Video - NO mirror (scaleX removed), no transform for zoom on display */}
         <video
           ref={videoRef}
           className="w-full aspect-[3/4] object-cover"
           playsInline
           muted
-          style={{ transform: `scale(${zoom})` }}
+          style={{
+            transform: `scale(${zoom})`,
+            transformOrigin: "center center",
+          }}
         />
 
-        {/* Scan overlay */}
+        {/* Viewfinder overlay */}
         {isStreaming && !isProcessing && (
           <div className="absolute inset-0 pointer-events-none">
-            {/* Corner guides */}
-            <div className="absolute top-6 left-6 w-12 h-12 border-t-3 border-l-3 border-primary rounded-tl-lg" style={{ borderWidth: '3px' }} />
-            <div className="absolute top-6 right-6 w-12 h-12 border-t-3 border-r-3 border-primary rounded-tr-lg" style={{ borderWidth: '3px' }} />
-            <div className="absolute bottom-20 left-6 w-12 h-12 border-b-3 border-l-3 border-primary rounded-bl-lg" style={{ borderWidth: '3px' }} />
-            <div className="absolute bottom-20 right-6 w-12 h-12 border-b-3 border-r-3 border-primary rounded-br-lg" style={{ borderWidth: '3px' }} />
-            {/* Center focus indicator */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-              <Focus className="w-10 h-10 text-primary/50" />
+            {/* Subtle vignette */}
+            <div className="absolute inset-0" style={{
+              background: "radial-gradient(ellipse at center, transparent 50%, hsl(210 30% 15% / 0.3) 100%)"
+            }} />
+            {/* Corner brackets */}
+            <svg className="absolute inset-4 w-[calc(100%-2rem)] h-[calc(100%-5rem)]" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0 24 L0 8 Q0 0 8 0 L24 0" stroke="hsl(174 62% 40%)" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M100% 24 L100% 8 Q100% 0 calc(100%-8) 0 L calc(100%-24) 0" stroke="hsl(174 62% 40%)" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M0 calc(100%-24) L0 calc(100%-8) Q0 100% 8 100% L24 100%" stroke="hsl(174 62% 40%)" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M100% calc(100%-24) L100% calc(100%-8) Q100% 100% calc(100%-8) 100% L calc(100%-24) 100%" stroke="hsl(174 62% 40%)" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+            {/* Center crosshair */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-2 bg-primary/40" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-px h-2 bg-primary/40" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-px bg-primary/40" />
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-px bg-primary/40" />
             </div>
           </div>
         )}
 
+        {/* Processing overlay */}
         {isProcessing && (
-          <div className="absolute inset-0 bg-foreground/30 flex items-center justify-center backdrop-blur-sm">
-            <div className="bg-card px-6 py-4 rounded-xl shadow-card flex items-center gap-3">
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span className="font-dyslexic text-sm text-card-foreground">Mendeteksi teks...</span>
+          <div className="absolute inset-0 bg-background/40 flex items-center justify-center backdrop-blur-md">
+            <div className="bg-card/95 px-8 py-5 rounded-2xl shadow-deep flex flex-col items-center gap-3">
+              <div className="w-10 h-10 border-3 border-primary/30 border-t-primary rounded-full animate-spin" style={{ borderWidth: '3px' }} />
+              <span className="font-dyslexic text-sm text-card-foreground font-medium">Mendeteksi teks...</span>
+              <span className="text-xs text-muted-foreground">Mohon tunggu sebentar</span>
             </div>
           </div>
         )}
+      </div>
 
-        {/* Controls bar */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-foreground/60 to-transparent p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="text-primary-foreground hover:bg-primary-foreground/20 h-10 w-10"
-                onClick={() => setZoom((z) => Math.max(1, z - 0.5))}
-              >
-                <ZoomOut className="w-5 h-5" />
-              </Button>
-              <span className="text-primary-foreground text-sm font-dyslexic self-center min-w-[3ch] text-center">
-                {zoom.toFixed(1)}x
-              </span>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="text-primary-foreground hover:bg-primary-foreground/20 h-10 w-10"
-                onClick={() => setZoom((z) => Math.min(4, z + 0.5))}
-              >
-                <ZoomIn className="w-5 h-5" />
-              </Button>
-            </div>
+      {/* Bottom controls - floating pill */}
+      <div className="mt-4 flex items-center justify-center gap-3">
+        {/* Zoom controls */}
+        <div className="flex items-center gap-1 bg-card rounded-full px-2 py-1.5 shadow-card border border-border">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 rounded-full text-foreground hover:text-primary hover:bg-accent"
+            onClick={() => setZoom((z) => Math.max(1, z - 0.5))}
+          >
+            <ZoomOut className="w-4 h-4" />
+          </Button>
+          <span className="text-xs font-dyslexic text-muted-foreground min-w-[3.5ch] text-center font-medium">
+            {zoom.toFixed(1)}x
+          </span>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 rounded-full text-foreground hover:text-primary hover:bg-accent"
+            onClick={() => setZoom((z) => Math.min(4, z + 0.5))}
+          >
+            <ZoomIn className="w-4 h-4" />
+          </Button>
+        </div>
 
-            <Button
-              size="lg"
-              className="bg-gradient-primary text-primary-foreground rounded-full h-16 w-16 animate-pulse-glow"
-              onClick={capture}
-              disabled={!isStreaming || isProcessing}
-            >
-              <Camera className="w-7 h-7" />
-            </Button>
+        {/* Capture button */}
+        <button
+          className="relative h-[72px] w-[72px] rounded-full bg-gradient-primary flex items-center justify-center shadow-deep active:scale-95 transition-transform disabled:opacity-50"
+          onClick={capture}
+          disabled={!isStreaming || isProcessing}
+        >
+          <div className="absolute inset-1 rounded-full border-2 border-primary-foreground/30" />
+          <Camera className="w-7 h-7 text-primary-foreground" />
+        </button>
 
-            <Button
-              size="icon"
-              variant="ghost"
-              className="text-primary-foreground hover:bg-primary-foreground/20 h-10 w-10"
-              onClick={toggleCamera}
-            >
-              <RotateCcw className="w-5 h-5" />
-            </Button>
-          </div>
+        {/* Flip camera */}
+        <div className="bg-card rounded-full shadow-card border border-border">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-11 w-11 rounded-full text-foreground hover:text-primary hover:bg-accent"
+            onClick={toggleCamera}
+          >
+            <RotateCcw className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
