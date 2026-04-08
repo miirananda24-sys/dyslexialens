@@ -3,16 +3,21 @@ import { ArrowLeft, Moon, Sun, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 
-const members = [
-  { name: "Helmi Rafif Hernanda", role: "Developer" },
-  { name: "Nafisa Anggraini", role: "Developer" },
-  { name: "Nayla Jihan Zaskiyah", role: "Developer" },
-  { name: "Puteri Elmira Nafizhah Kusumasari", role: "Developer" },
-  { name: "Rosa Fina Mawaddah", role: "Developer" },
-];
+import helmiImg from "@/assets/team/helmi.jpg";
+import putriImg from "@/assets/team/putri.jpeg";
+import naylaImg from "@/assets/team/nayla.jpeg";
+import nafisaImg from "@/assets/team/nafisa.jpeg";
+import rosaImg from "@/assets/team/rosa.jpeg";
+import oktarinaImg from "@/assets/team/oktarina.jpeg";
 
-const getInitials = (name: string) =>
-  name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+const members = [
+  { name: "dr. Oktarina, M. Sc., Ph. D", role: "Researcher", photo: oktarinaImg },
+  { name: "Helmi Rafif Hernanda", role: "Developer", photo: helmiImg },
+  { name: "Nafisa Anggraini", role: "Developer", photo: nafisaImg },
+  { name: "Nayla Jihan Zaskiyah", role: "Developer", photo: naylaImg },
+  { name: "Puteri Elmira Nafizhah Kusumasari", role: "Developer", photo: putriImg },
+  { name: "Rosa Fina Mawaddah", role: "Developer", photo: rosaImg },
+];
 
 const colors = [
   "from-primary to-primary/70",
@@ -20,6 +25,7 @@ const colors = [
   "from-accent-foreground to-primary",
   "from-primary/80 to-accent-foreground",
   "from-secondary/80 to-primary/60",
+  "from-primary/60 to-secondary/80",
 ];
 
 const Team = () => {
@@ -57,8 +63,8 @@ const Team = () => {
               key={m.name}
               className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border/50 shadow-sm hover:shadow-card transition-shadow"
             >
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colors[i]} flex items-center justify-center shrink-0`}>
-                <span className="text-sm font-bold text-primary-foreground">{getInitials(m.name)}</span>
+              <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${colors[i % colors.length]} flex items-center justify-center shrink-0 overflow-hidden`}>
+                <img src={m.photo} alt={m.name} className="w-full h-full object-cover rounded-xl" />
               </div>
               <div>
                 <h3 className="font-dyslexic text-sm font-bold text-card-foreground">{m.name}</h3>
