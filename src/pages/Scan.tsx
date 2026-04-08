@@ -1,16 +1,26 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { createWorker } from "tesseract.js";
-import { ArrowLeft, Eye, Moon, Sun, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Eye, Moon, Sun, Sparkles, Trash2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { correctOCRText } from "@/lib/ocr-correction";
 import CameraView from "@/components/CameraView";
 import TextResultPanel from "@/components/TextResultPanel";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAccessibility } from "@/contexts/AccessibilityContext";
 
+interface CorrectionInfo {
+  original: string;
+  suggested: string;
+  similarity: number;
+  wasChanged: boolean;
+}
+
 interface ScanResult {
   id: number;
   text: string;
+  correctedText: string;
+  corrections: CorrectionInfo[];
   timestamp: Date;
 }
 
@@ -39,7 +49,16 @@ const Scan = () => {
         return;
       }
 
-      const newResult: ScanResult = { id: Date.now(), text, timestamp: new Date() };
+      // Post-processing with Levenshtein Distance
+      const correctionResult = correctOCRText(text);
+
+      const newResult: ScanResult = {
+        id: Date.now(),
+        text,
+        correctedText: correctionResult.corrected,
+        corrections: correctionResult.corrections,
+        timestamp: new Date(),
+      };
       setScanResults((prev) => {
         if (prev.length > 0 && prev[0].text === text) return prev;
         return [newResult, ...prev].slice(0, 20);
@@ -86,7 +105,36 @@ const Scan = () => {
         <CameraView onCapture={handleCapture} isProcessing={isProcessing} autoScanInterval={3500} />
 
         {selectedResult && (
-          <TextResultPanel detectedText={selectedResult.text} accessibilitySettings={settings} />
+          <div className="space-y-3">
+            <TextResultPanel detectedText={selectedResult.correctedText} accessibilitySettings={settings} />
+
+            {/* Correction details */}
+            {selectedResult.corrections.length > 0 && (
+              <div className="bg-card rounded-2xl p-4 shadow-sm border border-border/50">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                  Koreksi OCR ({selectedResult.corrections.length} kata)
+                </h3>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {selectedResult.corrections.map((c, i) => (
+                    <div key={i} className={`flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg ${
+                      c.wasChanged ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
+                    }`}>
+                      {c.wasChanged ? (
+                        <CheckCircle2 className="w-3 h-3 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="w-3 h-3 shrink-0" />
+                      )}
+                      <span className="line-through opacity-60">{c.original}</span>
+                      <span>→</span>
+                      <span className="font-medium">{c.suggested}</span>
+                      <span className="ml-auto text-[10px] opacity-60">{c.similarity.toFixed(0)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {scanResults.length > 0 && (

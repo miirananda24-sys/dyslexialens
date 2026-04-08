@@ -5,6 +5,12 @@ import { useTheme } from "@/contexts/ThemeContext";
 
 const credits = [
   {
+    name: "Levenshtein Distance",
+    desc: "Algoritma untuk mengukur kemiripan kata dan koreksi OCR otomatis",
+    author: "Vladimir Levenshtein",
+    url: "https://en.wikipedia.org/wiki/Levenshtein_distance",
+  },
+  {
     name: "Tesseract.js",
     desc: "OCR engine untuk deteksi teks dari gambar",
     author: "naptha / Tesseract OCR",
