@@ -49,8 +49,20 @@ const Scan = () => {
         return;
       }
 
+      // Check OCR confidence - skip low-confidence results
+      if (data.confidence < 30) {
+        setIsProcessing(false);
+        return;
+      }
+
       // Post-processing with Levenshtein Distance
       const correctionResult = correctOCRText(text);
+
+      // Skip if correction resulted in empty text (garbage detected)
+      if (!correctionResult.corrected || correctionResult.corrected.trim().length < 2) {
+        setIsProcessing(false);
+        return;
+      }
 
       const newResult: ScanResult = {
         id: Date.now(),
@@ -60,7 +72,8 @@ const Scan = () => {
         timestamp: new Date(),
       };
       setScanResults((prev) => {
-        if (prev.length > 0 && prev[0].text === text) return prev;
+        // Skip duplicates and near-duplicates
+        if (prev.length > 0 && prev[0].correctedText === correctionResult.corrected) return prev;
         return [newResult, ...prev].slice(0, 20);
       });
       setSelectedResult((prev) => prev ?? newResult);
