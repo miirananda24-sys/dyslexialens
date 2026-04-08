@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { createWorker } from "tesseract.js";
-import { ArrowLeft, Eye, Moon, Sun, Sparkles, Trash2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Eye, Moon, Sun, Sparkles, Trash2, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { correctOCRText } from "@/lib/ocr-correction";
 import CameraView from "@/components/CameraView";
 import TextResultPanel from "@/components/TextResultPanel";
@@ -49,16 +49,13 @@ const Scan = () => {
         return;
       }
 
-      // Check OCR confidence - skip low-confidence results
       if (data.confidence < 30) {
         setIsProcessing(false);
         return;
       }
 
-      // Post-processing with Levenshtein Distance
       const correctionResult = correctOCRText(text);
 
-      // Skip if correction resulted in empty text (garbage detected)
       if (!correctionResult.corrected || correctionResult.corrected.trim().length < 2) {
         setIsProcessing(false);
         return;
@@ -72,7 +69,6 @@ const Scan = () => {
         timestamp: new Date(),
       };
       setScanResults((prev) => {
-        // Skip duplicates and near-duplicates
         if (prev.length > 0 && prev[0].correctedText === correctionResult.corrected) return prev;
         return [newResult, ...prev].slice(0, 20);
       });
@@ -90,22 +86,24 @@ const Scan = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/40">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      <div className="fixed inset-0 bg-gradient-mesh pointer-events-none" />
+
+      <header className="sticky top-0 z-50 bg-glass border-b border-border/30">
         <div className="max-w-2xl mx-auto px-4 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full" onClick={() => navigate("/")}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <div className="w-8 h-8 rounded-xl bg-gradient-primary flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Eye className="w-4 h-4 text-primary-foreground" />
             </div>
-            <h1 className="font-dyslexic text-sm font-bold text-foreground">Live Scan</h1>
+            <h1 className="text-sm font-bold text-foreground">Live Scan</h1>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-accent/50 border border-border/40">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
               <Sparkles className="w-3 h-3 text-primary" />
-              <span className="text-[10px] font-medium text-accent-foreground">OCR Ready</span>
+              <span className="text-[10px] font-semibold text-primary">OCR Active</span>
             </div>
             <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={toggleTheme}>
               {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -114,34 +112,37 @@ const Scan = () => {
         </div>
       </header>
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-4 space-y-4">
-        <CameraView onCapture={handleCapture} isProcessing={isProcessing} autoScanInterval={3500} />
+      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-4 space-y-4 relative z-10">
+        <div className="animate-scale-in">
+          <CameraView onCapture={handleCapture} isProcessing={isProcessing} autoScanInterval={3500} />
+        </div>
 
         {selectedResult && (
-          <div className="space-y-3">
+          <div className="space-y-3 animate-fade-in-up">
             <TextResultPanel detectedText={selectedResult.correctedText} accessibilitySettings={settings} />
 
-            {/* Correction details */}
             {selectedResult.corrections.length > 0 && (
-              <div className="bg-card rounded-2xl p-4 shadow-sm border border-border/50">
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <div className="bg-card rounded-2xl p-4 shadow-card border border-border/50">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
                   Koreksi OCR ({selectedResult.corrections.length} kata)
                 </h3>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
                   {selectedResult.corrections.map((c, i) => (
-                    <div key={i} className={`flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg ${
-                      c.wasChanged ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
+                    <div key={i} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-xl transition-colors ${
+                      c.wasChanged
+                        ? "bg-primary/8 text-primary border border-primary/10"
+                        : "bg-destructive/8 text-destructive border border-destructive/10"
                     }`}>
                       {c.wasChanged ? (
-                        <CheckCircle2 className="w-3 h-3 shrink-0" />
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                       ) : (
-                        <AlertTriangle className="w-3 h-3 shrink-0" />
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                       )}
-                      <span className="line-through opacity-60">{c.original}</span>
-                      <span>→</span>
-                      <span className="font-medium">{c.suggested}</span>
-                      <span className="ml-auto text-[10px] opacity-60">{c.similarity.toFixed(0)}%</span>
+                      <span className="line-through opacity-50">{c.original}</span>
+                      <span className="text-muted-foreground">→</span>
+                      <span className="font-semibold">{c.suggested}</span>
+                      <span className="ml-auto text-[10px] opacity-50 tabular-nums">{c.similarity.toFixed(0)}%</span>
                     </div>
                   ))}
                 </div>
@@ -151,12 +152,13 @@ const Scan = () => {
         )}
 
         {scanResults.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-2.5 animate-fade-in-up" style={{ animationDelay: "100ms" }}>
             <div className="flex items-center justify-between">
-              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Riwayat Scan ({scanResults.length})
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                Riwayat ({scanResults.length})
               </h2>
-              <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground gap-1" onClick={clearResults}>
+              <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground gap-1.5 hover:text-destructive" onClick={clearResults}>
                 <Trash2 className="w-3 h-3" /> Hapus
               </Button>
             </div>
@@ -165,16 +167,16 @@ const Scan = () => {
                 <button
                   key={result.id}
                   onClick={() => setSelectedResult(result)}
-                  className={`w-full text-left p-3 rounded-xl border transition-all text-sm ${
+                  className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 text-sm ${
                     settings.useDyslexicFont ? "font-dyslexic" : ""
                   } ${
                     selectedResult?.id === result.id
-                      ? "bg-primary/10 border-primary/30 text-foreground"
-                      : "bg-card border-border/40 text-muted-foreground hover:bg-accent/30"
+                      ? "bg-primary/8 border-primary/25 text-foreground shadow-card"
+                      : "bg-card border-border/40 text-muted-foreground hover:bg-accent/40 hover:border-border"
                   }`}
                 >
-                  <p className="line-clamp-2 leading-relaxed">{result.text}</p>
-                  <span className="text-[10px] text-muted-foreground/60 mt-1 block">
+                  <p className="line-clamp-2 leading-relaxed">{result.correctedText}</p>
+                  <span className="text-[10px] text-muted-foreground/50 mt-1.5 block tabular-nums">
                     {result.timestamp.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                   </span>
                 </button>
