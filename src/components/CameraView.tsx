@@ -52,12 +52,45 @@ const CameraView = ({ onCapture, isProcessing, autoScanInterval = 3500 }: Camera
     if (!ctx) return;
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
+
+    // Adaptive thresholding with better contrast for OCR
+    // Step 1: Convert to grayscale with enhanced contrast
     for (let i = 0; i < data.length; i += 4) {
       const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-      const adjusted = Math.min(255, Math.max(0, (gray - 128) * 1.5 + 128));
-      const val = adjusted > 140 ? 255 : 0;
+      // Increase contrast with sigmoid-like curve
+      const contrast = 1.8;
+      const adjusted = Math.min(255, Math.max(0, ((gray / 255 - 0.5) * contrast + 0.5) * 255));
+      data[i] = adjusted; data[i + 1] = adjusted; data[i + 2] = adjusted;
+    }
+
+    // Step 2: Apply Otsu's threshold for optimal binarization
+    const histogram = new Array(256).fill(0);
+    for (let i = 0; i < data.length; i += 4) histogram[data[i]]++;
+    const totalPixels = data.length / 4;
+    let sum = 0;
+    for (let i = 0; i < 256; i++) sum += i * histogram[i];
+    let sumB = 0, wB = 0, maxVariance = 0, threshold = 128;
+    for (let t = 0; t < 256; t++) {
+      wB += histogram[t];
+      if (wB === 0) continue;
+      const wF = totalPixels - wB;
+      if (wF === 0) break;
+      sumB += t * histogram[t];
+      const mB = sumB / wB;
+      const mF = (sum - sumB) / wF;
+      const variance = wB * wF * (mB - mF) * (mB - mF);
+      if (variance > maxVariance) {
+        maxVariance = variance;
+        threshold = t;
+      }
+    }
+
+    // Step 3: Apply threshold
+    for (let i = 0; i < data.length; i += 4) {
+      const val = data[i] > threshold ? 255 : 0;
       data[i] = val; data[i + 1] = val; data[i + 2] = val;
     }
+
     ctx.putImageData(imageData, 0, 0);
     return canvas.toDataURL("image/png", 1.0);
   }, []);

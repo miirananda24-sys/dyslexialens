@@ -101,8 +101,58 @@ interface CorrectionResult {
   }>;
 }
 
+// Check if text is mostly garbage (symbols, random chars)
+function isGarbageText(text: string): boolean {
+  const stripped = text.replace(/\s+/g, "");
+  if (stripped.length === 0) return true;
+  const alphaCount = (stripped.match(/[a-zA-Z]/g) || []).length;
+  const ratio = alphaCount / stripped.length;
+  // If less than 40% alphabetic characters, it's garbage
+  if (ratio < 0.4) return true;
+  // If too many repeated special chars
+  if (/([^a-zA-Z0-9\s])\1{2,}/.test(text)) return true;
+  // If average word length is too short (random single chars)
+  const words = text.split(/\s+/).filter(w => w.length > 0);
+  const avgLen = words.reduce((s, w) => s + w.length, 0) / (words.length || 1);
+  if (words.length > 3 && avgLen < 1.5) return true;
+  return false;
+}
+
+// Clean raw OCR text: strip stray symbols, normalize whitespace
+function cleanRawText(text: string): string {
+  return text
+    // Remove lines that are purely symbols/numbers with no real words
+    .split("\n")
+    .filter(line => {
+      const stripped = line.trim();
+      if (!stripped) return false;
+      const alpha = (stripped.match(/[a-zA-Z]/g) || []).length;
+      return alpha / Math.max(stripped.length, 1) > 0.3;
+    })
+    .join("\n")
+    // Remove isolated special characters (not part of words)
+    .replace(/(?<!\w)[^a-zA-Z0-9\s.,!?;:'"()-](?!\w)/g, "")
+    // Collapse multiple spaces
+    .replace(/[ \t]{2,}/g, " ")
+    // Remove lines with only 1-2 random characters
+    .split("\n")
+    .filter(line => line.trim().length > 2 || /^[a-zA-Z]+$/.test(line.trim()))
+    .join("\n")
+    .trim();
+}
+
 export function correctOCRText(text: string): CorrectionResult {
-  const words = text.split(/(\s+)/);
+  // Pre-filter: reject garbage
+  if (isGarbageText(text)) {
+    return { original: text, corrected: "", corrections: [] };
+  }
+
+  const cleaned = cleanRawText(text);
+  if (!cleaned || cleaned.length < 2) {
+    return { original: text, corrected: "", corrections: [] };
+  }
+
+  const words = cleaned.split(/(\s+)/);
   const corrections: CorrectionResult["corrections"] = [];
   const correctedWords: string[] = [];
 
@@ -112,9 +162,11 @@ export function correctOCRText(text: string): CorrectionResult {
       continue;
     }
 
+    // Remove words that are purely symbols
     const clean = word.replace(/[^a-zA-Z]/g, "").toLowerCase();
     if (clean.length < 2) {
-      correctedWords.push(word);
+      // Skip single-char garbage, keep numbers
+      if (/^\d+$/.test(word)) correctedWords.push(word);
       continue;
     }
 
