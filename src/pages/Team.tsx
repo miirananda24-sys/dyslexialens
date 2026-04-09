@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Moon, Sun, Users, Award, Code2, FlaskConical, MessageCircle } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Users, Award, Code2, FlaskConical, Mail, Send, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -19,9 +20,34 @@ const members = [
   { name: "Rosa Fina Mawaddah", role: "Developer", photo: rosaImg, roleIcon: Code2, accent: "border-primary/30 bg-primary/5" },
 ];
 
+const FEEDBACK_EMAIL = "miirananda24@gmail.com";
+
 const Team = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [feedbackType, setFeedbackType] = useState<"bug" | "feedback">("feedback");
+  const [sent, setSent] = useState(false);
+
+  const handleSend = () => {
+    if (!message.trim()) return;
+    const subject = encodeURIComponent(
+      feedbackType === "bug"
+        ? `[Bug Report] Dyslexia Lens - dari ${name || "Anonim"}`
+        : `[Feedback] Dyslexia Lens - dari ${name || "Anonim"}`
+    );
+    const body = encodeURIComponent(
+      `Nama: ${name || "Anonim"}\nTipe: ${feedbackType === "bug" ? "Bug Report" : "Feedback"}\n\n${message}`
+    );
+    window.open(`mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`, "_blank");
+    setSent(true);
+    setTimeout(() => {
+      setSent(false);
+      setName("");
+      setMessage("");
+    }, 3000);
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
@@ -75,16 +101,80 @@ const Team = () => {
           ))}
         </div>
 
-        {/* Contact Us */}
-        <a
-          href="https://wa.me/6288298904416"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="animate-fade-in-up flex items-center justify-center gap-2.5 w-full p-4 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-semibold text-sm shadow-card hover:shadow-deep transition-all duration-300 active:scale-[0.98]"
-        >
-          <MessageCircle className="w-5 h-5" />
-          Contact us if there's any errors
-        </a>
+        {/* Feedback Form */}
+        <div className="animate-fade-in-up rounded-2xl bg-card border border-border/50 shadow-card p-5 space-y-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Mail className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm text-card-foreground">Feedback & Bug Report</h3>
+              <p className="text-xs text-muted-foreground">Bantu kami jadi lebih baik</p>
+            </div>
+          </div>
+
+          {/* Type toggle */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFeedbackType("feedback")}
+              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
+                feedbackType === "feedback"
+                  ? "bg-primary text-primary-foreground shadow-card"
+                  : "bg-muted text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              💬 Feedback
+            </button>
+            <button
+              onClick={() => setFeedbackType("bug")}
+              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
+                feedbackType === "bug"
+                  ? "bg-destructive text-destructive-foreground shadow-card"
+                  : "bg-muted text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              🐛 Bug Report
+            </button>
+          </div>
+
+          <input
+            type="text"
+            placeholder="Nama kamu (opsional)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-4 py-2.5 rounded-xl bg-background border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+          />
+
+          <textarea
+            placeholder="Tulis pesan, saran, atau laporkan bug..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            rows={4}
+            className="w-full px-4 py-2.5 rounded-xl bg-background border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
+          />
+
+          <button
+            onClick={handleSend}
+            disabled={!message.trim() || sent}
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-300 active:scale-[0.98] ${
+              sent
+                ? "bg-primary/20 text-primary"
+                : "bg-primary text-primary-foreground hover:opacity-90 shadow-card disabled:opacity-50 disabled:cursor-not-allowed"
+            }`}
+          >
+            {sent ? (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                Terkirim! Cek email app kamu
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                Kirim Feedback
+              </>
+            )}
+          </button>
+        </div>
       </main>
     </div>
   );
