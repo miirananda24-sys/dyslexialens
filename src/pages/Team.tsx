@@ -169,7 +169,7 @@ const Team = () => {
 
           <button
             onClick={handleSend}
-            disabled={!message.trim() || sent}
+            disabled={!message.trim() || sent || sending}
             className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-300 active:scale-[0.98] ${
               sent
                 ? "bg-primary/20 text-primary"
