@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Moon, Sun, Users, Award, Code2, FlaskConical } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Users, Award, Code2, FlaskConical, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -74,6 +74,17 @@ const Team = () => {
             </div>
           ))}
         </div>
+
+        {/* Contact Us */}
+        <a
+          href="https://wa.me/6288298904416"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="animate-fade-in-up flex items-center justify-center gap-2.5 w-full p-4 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-semibold text-sm shadow-card hover:shadow-deep transition-all duration-300 active:scale-[0.98]"
+        >
+          <MessageCircle className="w-5 h-5" />
+          Contact us if there's any errors
+        </a>
       </main>
     </div>
   );
