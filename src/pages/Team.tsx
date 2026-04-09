@@ -30,23 +30,37 @@ const Team = () => {
   const [feedbackType, setFeedbackType] = useState<"bug" | "feedback">("feedback");
   const [sent, setSent] = useState(false);
 
-  const handleSend = () => {
-    if (!message.trim()) return;
-    const subject = encodeURIComponent(
-      feedbackType === "bug"
-        ? `[Bug Report] Dyslexia Lens - dari ${name || "Anonim"}`
-        : `[Feedback] Dyslexia Lens - dari ${name || "Anonim"}`
-    );
-    const body = encodeURIComponent(
-      `Nama: ${name || "Anonim"}\nTipe: ${feedbackType === "bug" ? "Bug Report" : "Feedback"}\n\n${message}`
-    );
-    window.open(`mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`, "_blank");
-    setSent(true);
-    setTimeout(() => {
-      setSent(false);
-      setName("");
-      setMessage("");
-    }, 3000);
+  const [sending, setSending] = useState(false);
+
+  const handleSend = async () => {
+    if (!message.trim() || sending) return;
+    setSending(true);
+    try {
+      const res = await fetch(`https://formsubmit.co/ajax/${FEEDBACK_EMAIL}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          _subject: feedbackType === "bug"
+            ? `[Bug Report] Dyslexia Lens - dari ${name || "Anonim"}`
+            : `[Feedback] Dyslexia Lens - dari ${name || "Anonim"}`,
+          Nama: name || "Anonim",
+          Tipe: feedbackType === "bug" ? "Bug Report" : "Feedback",
+          Pesan: message,
+        }),
+      });
+      if (res.ok) {
+        setSent(true);
+        setTimeout(() => {
+          setSent(false);
+          setName("");
+          setMessage("");
+        }, 3000);
+      }
+    } catch (e) {
+      console.error("Failed to send feedback:", e);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
