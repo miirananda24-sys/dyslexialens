@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Moon, Sun, Users, Award, Code2, FlaskConical, Mail, Send, CheckCircle } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Users, Award, Code2, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -20,48 +19,9 @@ const members = [
   { name: "Rosa Fina Mawaddah", role: "Developer", photo: rosaImg, roleIcon: Code2, accent: "border-primary/30 bg-primary/5" },
 ];
 
-const FEEDBACK_EMAIL = "miirananda24@gmail.com";
-
 const Team = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const [name, setName] = useState("");
-  const [message, setMessage] = useState("");
-  const [feedbackType, setFeedbackType] = useState<"bug" | "feedback">("feedback");
-  const [sent, setSent] = useState(false);
-
-  const [sending, setSending] = useState(false);
-
-  const handleSend = async () => {
-    if (!message.trim() || sending) return;
-    setSending(true);
-    try {
-      const res = await fetch(`https://formsubmit.co/ajax/${FEEDBACK_EMAIL}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({
-          _subject: feedbackType === "bug"
-            ? `[Bug Report] Dyslexia Lens - dari ${name || "Anonim"}`
-            : `[Feedback] Dyslexia Lens - dari ${name || "Anonim"}`,
-          Nama: name || "Anonim",
-          Tipe: feedbackType === "bug" ? "Bug Report" : "Feedback",
-          Pesan: message,
-        }),
-      });
-      if (res.ok) {
-        setSent(true);
-        setTimeout(() => {
-          setSent(false);
-          setName("");
-          setMessage("");
-        }, 3000);
-      }
-    } catch (e) {
-      console.error("Failed to send feedback:", e);
-    } finally {
-      setSending(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
@@ -85,7 +45,6 @@ const Team = () => {
       </header>
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-5 relative z-10">
-        {/* Hero */}
         <div className="text-center animate-fade-in-up">
           <div className="w-16 h-16 rounded-2xl bg-gradient-primary mx-auto flex items-center justify-center mb-3 shadow-glow">
             <Award className="w-8 h-8 text-primary-foreground" />
@@ -94,7 +53,6 @@ const Team = () => {
           <p className="text-sm text-muted-foreground">Orang-orang hebat di balik Dyslexia Lens</p>
         </div>
 
-        {/* Members */}
         <div className="space-y-2.5 stagger-children">
           {members.map((m) => (
             <div
@@ -113,86 +71,6 @@ const Team = () => {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Feedback Form */}
-        <div className="animate-fade-in-up rounded-2xl bg-card border border-border/50 shadow-card p-5 space-y-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Mail className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm text-card-foreground">Feedback & Bug Report</h3>
-              <p className="text-xs text-muted-foreground">Bantu kami jadi lebih baik</p>
-            </div>
-          </div>
-
-          {/* Type toggle */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFeedbackType("feedback")}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
-                feedbackType === "feedback"
-                  ? "bg-primary text-primary-foreground shadow-card"
-                  : "bg-muted text-muted-foreground hover:bg-accent"
-              }`}
-            >
-              💬 Feedback
-            </button>
-            <button
-              onClick={() => setFeedbackType("bug")}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
-                feedbackType === "bug"
-                  ? "bg-destructive text-destructive-foreground shadow-card"
-                  : "bg-muted text-muted-foreground hover:bg-accent"
-              }`}
-            >
-              🐛 Bug Report
-            </button>
-          </div>
-
-          <input
-            type="text"
-            placeholder="Nama kamu (opsional)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl bg-background border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-          />
-
-          <textarea
-            placeholder="Tulis pesan, saran, atau laporkan bug..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rows={4}
-            className="w-full px-4 py-2.5 rounded-xl bg-background border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
-          />
-
-          <button
-            onClick={handleSend}
-            disabled={!message.trim() || sent || sending}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-300 active:scale-[0.98] ${
-              sent
-                ? "bg-primary/20 text-primary"
-                : "bg-primary text-primary-foreground hover:opacity-90 shadow-card disabled:opacity-50 disabled:cursor-not-allowed"
-            }`}
-          >
-            {sent ? (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                Terkirim! Feedback kamu sudah masuk
-              </>
-            ) : sending ? (
-              <>
-                <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                Mengirim...
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4" />
-                Kirim Feedback
-              </>
-            )}
-          </button>
         </div>
       </main>
     </div>
