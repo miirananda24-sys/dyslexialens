@@ -258,6 +258,10 @@
   animation: gradient-shift 6s ease infinite;
 }
 
+.animate-page-in {
+  animation: page-in 0.4s ease-out both;
+}
+
 /* Stagger children animations */
 .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
 .stagger-children > *:nth-child(2) { animation-delay: 80ms; }
