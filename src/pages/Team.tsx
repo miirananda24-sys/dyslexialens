@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Moon, Sun, Users, Award, Code2, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
+import PageTransition from "@/components/PageTransition";
+import { useTheme } from "@/contexts/ThemeContext";
 
 import helmiImg from "@/assets/team/helmi.jpg";
 import putriImg from "@/assets/team/putri.jpeg";
@@ -24,6 +26,7 @@ const Team = () => {
   const { theme, toggleTheme } = useTheme();
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
       <div className="fixed inset-0 bg-gradient-mesh pointer-events-none" />
 
