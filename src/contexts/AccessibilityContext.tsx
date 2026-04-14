@@ -5,6 +5,7 @@ interface AccessibilitySettings {
   letterSpacing: number;
   lineHeight: number;
   useDyslexicFont: boolean;
+  fontFamily: string;
 }
 
 interface AccessibilityContextType {
@@ -17,6 +18,7 @@ const defaults: AccessibilitySettings = {
   letterSpacing: 2,
   lineHeight: 1.8,
   useDyslexicFont: true,
+  fontFamily: "OpenDyslexic",
 };
 
 const AccessibilityContext = createContext<AccessibilityContextType>({
