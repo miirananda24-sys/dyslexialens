@@ -77,6 +77,7 @@ const Team = () => {
         </div>
       </main>
     </div>
+    </PageTransition>
   );
 };
 
