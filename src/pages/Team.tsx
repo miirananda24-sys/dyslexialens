@@ -32,7 +32,7 @@ const Team = () => {
       <header className="sticky top-0 z-50 bg-glass border-b border-border/30">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full" onClick={() => navigate("/")}>
+            <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full" onClick={() => navigate("/about")}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="w-8 h-8 rounded-xl bg-gradient-primary flex items-center justify-center">

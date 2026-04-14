@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Moon, Sun, ExternalLink, Code2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
+import PageTransition from "@/components/PageTransition";
 
 const credits = [
   {
@@ -81,13 +82,14 @@ const Credits = () => {
   const { theme, toggleTheme } = useTheme();
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
       <div className="fixed inset-0 bg-gradient-mesh pointer-events-none" />
 
       <header className="sticky top-0 z-50 bg-glass border-b border-border/30">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full" onClick={() => navigate("/")}>
+            <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full" onClick={() => navigate("/about")}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="w-8 h-8 rounded-xl bg-gradient-secondary flex items-center justify-center">
@@ -136,6 +138,7 @@ const Credits = () => {
         </div>
       </main>
     </div>
+    </PageTransition>
   );
 };
 
