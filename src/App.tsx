@@ -10,6 +10,8 @@ import Scan from "./pages/Scan";
 import Settings from "./pages/Settings";
 import Team from "./pages/Team";
 import Credits from "./pages/Credits";
+import About from "./pages/About";
+import Feedback from "./pages/Feedback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,8 +28,10 @@ const App = () => (
               <Route path="/" element={<Home />} />
               <Route path="/scan" element={<Scan />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/about" element={<About />} />
               <Route path="/team" element={<Team />} />
               <Route path="/credits" element={<Credits />} />
+              <Route path="/feedback" element={<Feedback />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
