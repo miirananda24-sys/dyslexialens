@@ -3,7 +3,6 @@ import { ArrowLeft, Moon, Sun, Users, Award, Code2, FlaskConical } from "lucide-
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import PageTransition from "@/components/PageTransition";
-import { useTheme } from "@/contexts/ThemeContext";
 
 import helmiImg from "@/assets/team/helmi.jpg";
 import putriImg from "@/assets/team/putri.jpeg";
