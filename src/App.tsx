@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
+import Welcome from "./pages/Welcome";
 import Home from "./pages/Home";
 import Scan from "./pages/Scan";
 import Settings from "./pages/Settings";
@@ -25,7 +26,8 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<Welcome />} />
+              <Route path="/home" element={<Home />} />
               <Route path="/scan" element={<Scan />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/about" element={<About />} />
