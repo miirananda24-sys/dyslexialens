@@ -40,41 +40,6 @@ const Home = () => {
         </header>
 
         <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-5 relative z-10">
-          {/* Theme Picker */}
-          <div className="animate-fade-in-up rounded-2xl bg-card border border-border/50 shadow-card p-4">
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Pilih Tema</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => { if (theme === "dark") toggleTheme(); }}
-                className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-300 ${
-                  theme === "light"
-                    ? "border-primary bg-primary/5 shadow-glow"
-                    : "border-border/50 hover:border-primary/30 bg-background"
-                }`}
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-orange-200 flex items-center justify-center shadow-card">
-                  <Sun className="w-6 h-6 text-amber-600" />
-                </div>
-                <span className="text-xs font-semibold text-card-foreground">Light</span>
-                {theme === "light" && <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
-              </button>
-              <button
-                onClick={() => { if (theme === "light") toggleTheme(); }}
-                className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-300 ${
-                  theme === "dark"
-                    ? "border-primary bg-primary/5 shadow-glow"
-                    : "border-border/50 hover:border-primary/30 bg-background"
-                }`}
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-800 to-purple-900 flex items-center justify-center shadow-card">
-                  <Moon className="w-6 h-6 text-indigo-200" />
-                </div>
-                <span className="text-xs font-semibold text-card-foreground">Dark</span>
-                {theme === "dark" && <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
-              </button>
-            </div>
-          </div>
-
           {/* Hero */}
           <div className="relative overflow-hidden rounded-3xl bg-gradient-hero p-6 pb-8 text-primary-foreground shadow-xl-custom animate-fade-in-up" style={{ animationDelay: "80ms" }}>
             <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
