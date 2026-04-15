@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import {
-  ScanLine, Settings, Moon, Sun, ChevronRight, Sparkles, Zap, Eye, BookOpen
+  ScanLine, Settings, ChevronRight, Sparkles, Zap, Eye, BookOpen, Moon, Sun
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
