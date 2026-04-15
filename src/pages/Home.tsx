@@ -19,10 +19,10 @@ const Home = () => {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      <div className="min-h-screen bg-background flex flex-col items-center relative overflow-hidden">
         <div className="fixed inset-0 bg-gradient-mesh pointer-events-none" />
 
-        <header className="sticky top-0 z-50 bg-glass border-b border-border/30">
+        <header className="sticky top-0 z-50 bg-glass border-b border-border/30 w-full">
           <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-deep ring-2 ring-primary/20">
@@ -39,7 +39,7 @@ const Home = () => {
           </div>
         </header>
 
-        <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-5 relative z-10">
+        <main className="flex-1 flex flex-col justify-center max-w-2xl w-full mx-auto px-4 py-6 space-y-5 relative z-10 lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto">
           {/* Hero */}
           <div className="relative overflow-hidden rounded-3xl bg-gradient-hero p-6 pb-8 text-primary-foreground shadow-xl-custom animate-fade-in-up" style={{ animationDelay: "80ms" }}>
             <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
@@ -103,7 +103,7 @@ const Home = () => {
         </main>
 
         {/* Footer */}
-        <footer className="relative z-10 border-t border-border/30">
+        <footer className="relative z-10 border-t border-border/30 w-full">
           <div className="max-w-2xl mx-auto px-4 py-5 flex flex-col items-center gap-3">
             <button
               onClick={() => navigate("/about")}
